@@ -1,5 +1,9 @@
 #include <iostream>
 
+#define K0_const 1e12 //секунда^(-1)
+#define k_bol 8.625E-5 //константа Больцмана еВ/К
+#define Temperature 300 // Kельвин
+
 using namespace std;
 struct Rate_Catalog
 {
@@ -91,10 +95,11 @@ void find_rang(bool * chain_bool, int pos) {
 	}
 	
 };
-void find_rate() {
-
+void find_rate(bool * chain_bool, int pos, double temperature) {
+	mas_rate[pos].rate_left = (double)(K0_const)* exp((double)((-1)* mas_rate[pos].move_left_barieer / (k_bol) / temperature / 1000));
+	mas_rate[pos].rate_right = (double)(K0_const)* exp((double)((-1)* mas_rate[pos].move_right_barieer / (k_bol) / temperature / 1000));
 };
-void create_rate_catalog() {
+void change_rate_catalog() {
 	for (int i = mem_pos_from - 3; i < mem_pos_from + 3; i++) {
 		int rang[3] = { -1,0,-1 };
 		
@@ -102,8 +107,18 @@ void create_rate_catalog() {
 };
 void choose_event() {
 	//
+	double * sum = new double[201]; //массив сумм всех вероятностей
 
+	sum[0] = mas_rate[chain_int[0]].rate_left; //вероятность прыжка влево
+	sum[1] = sum[0] + mas_rate[chain_int[0]].rate_right; // вероятность прыжка вправо
+	int i = 1;
+	while (chain_int[i] >= 0 && i < 100) {
+		sum[2 * i] = sum[2 * i - 1] + mas_rate[chain_int[i]].rate_left;
+		sum[2 * i + 1] = sum[2 * i] + mas_rate[chain_int[i]].rate_right;
+	}
+	sum[2 * i] = sum[2 * i - 1] + 2.7;
 	//
+	delete[] sum;
 	mem_pos_from = -1;
 }
 void move_atom() {
