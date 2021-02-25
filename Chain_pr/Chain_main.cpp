@@ -1,4 +1,5 @@
 #include <iostream>
+#include <math.h>
 
 #define K0_const 1e12 //секунда^(-1)
 #define k_bol 8.625E-5 //константа Больцмана еВ/К
@@ -24,6 +25,7 @@ void find_rate(bool * chain_bool, int pos, double temperature);
 Rate_Catalog * mas_rate = new Rate_Catalog[100];
 Possible_Events * events = new Possible_Events[201];
 int mem_pos_to = 0;
+
 void find_rang(bool * chain_bool, int pos, double t) {
 	int l = 1;
 	while (chain_bool[((int)100 + (pos - l)) % 100] != true && l < 5) {// ищем разность позициий данного атома и ближайшего слева
@@ -104,7 +106,9 @@ void find_rang(bool * chain_bool, int pos, double t) {
 	find_rate(chain_bool, pos, t);
 };
 void find_rate(bool * chain_bool, int pos, double temperature) {
+	if(mas_rate[pos].move_left_barieer > 0)
 	mas_rate[pos].rate_left = (double)( K0_const )* exp((double)((-1)* mas_rate[pos].move_left_barieer / (k_bol) / temperature));
+	if (mas_rate[pos].move_right_barieer > 0)
 	mas_rate[pos].rate_right = (double)( K0_const )* exp((double)((-1)* mas_rate[pos].move_right_barieer / (k_bol) / temperature));
 };
 void change_rate_catalog(bool * chain_bool) {
