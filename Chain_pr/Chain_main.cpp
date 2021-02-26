@@ -112,18 +112,18 @@ void find_rate(bool * chain_bool, int pos, double temperature) {
 	if (mas_rate[pos].move_right_barieer > 0)
 	mas_rate[pos].rate_right = (double)( K0_const )* exp((double)((-1)* mas_rate[pos].move_right_barieer / (k_bol) / temperature));
 };
-void change_rate_catalog(bool * chain_bool) {
+void change_rate_catalog(bool * chain_bool, double t) {
 	int i = 0;
-	find_rang(chain_bool, mem_pos_to, Temperature);
+	find_rang(chain_bool, mem_pos_to, t);
 	for (int i = 1; i < 5; i++) {
 		if (chain_bool[(100 + mem_pos_to - i) % 100]) {
-			find_rang(chain_bool, (100 + mem_pos_to - i) % 100, Temperature);
+			find_rang(chain_bool, (100 + mem_pos_to - i) % 100, t);
 			break;
 		}
 	}
 	for (int i = 1; i < 5; i++) {
 		if (chain_bool[(mem_pos_to + i) % 100]) {
-			find_rang(chain_bool, (mem_pos_to + i) % 100, Temperature);
+			find_rang(chain_bool, (mem_pos_to + i) % 100, t);
 			break;
 		}
 	}
@@ -195,13 +195,6 @@ int main()
 		chain_bool[i] = false;
 	}
 
-	chain_int[0] = 0;
-	chain_bool[0] = true;
-	mem_pos_to = 0;
-	mas_rate[0].rate_left = 462;
-	mas_rate[0].rate_right = 462;
-	choose_event(chain_int, chain_bool);
-	change_rate_catalog(chain_bool);
 
 	//1 ÝÒÀÏ (Íàïûëåíèå)
 	for (int i = 1; i < 10000; i++) {
@@ -212,8 +205,9 @@ int main()
 			cout << endl;
 		}
 		choose_event(chain_int, chain_bool);
-		change_rate_catalog(chain_bool);
+		change_rate_catalog(chain_bool, Temperature);
 	}
+	//2 ÝÒÀÏ (Îòæèã)
 
 
 	delete[] chain_bool;
