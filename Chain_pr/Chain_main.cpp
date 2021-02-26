@@ -129,7 +129,7 @@ void change_rate_catalog(bool * chain_bool, double t) {
 	}
 };
 
-void choose_event(int * chain_int, bool* chain_bool) {
+void choose_event(int * chain_int, bool* chain_bool, bool new_atoms) {
 	//
 	int k = 1;
 	int m = 0;
@@ -188,8 +188,10 @@ void choose_event(int * chain_int, bool* chain_bool) {
 int main()
 {
 	unsigned int start_time = clock();
+
 	int * chain_int = new int[100];
 	bool * chain_bool = new bool[100];
+
 	for (int i = 0; i < 100; i++) {
 		chain_int[i] = -1;
 		chain_bool[i] = false;
@@ -198,7 +200,7 @@ int main()
 
 	//1 ÝÒÀÏ (Íàïûëåíèå)
 	for (int i = 1; i < 10000; i++) {
-		if (i % 100 == 0) {
+		if (i % 1000 == 0) {
 			for (int k = 0; k < 100; k++) {
 				if (chain_bool[k]) cout << k << ' ';
 			}
@@ -207,6 +209,9 @@ int main()
 		choose_event(chain_int, chain_bool);
 		change_rate_catalog(chain_bool, Temperature);
 	}
+	int count_number_of_adatoms = 0;
+	for (int i = 0; i < 100; i++) { if (chain_bool[i]) count_number_of_adatoms++; }
+
 	//2 ÝÒÀÏ (Îòæèã)
 
 
