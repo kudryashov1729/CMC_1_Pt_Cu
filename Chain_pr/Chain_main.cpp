@@ -1,9 +1,10 @@
 #include <iostream>
 #include <math.h>
+#include <ctime>
 
 #define K0_const 1e12 //секунда^(-1)
 #define k_bol 8.625E-5 //константа Больцмана еВ/К
-#define Temperature 300 // Kельвин
+#define Temperature 130 // Kельвин
 
 using namespace std;
 struct Rate_Catalog
@@ -113,47 +114,48 @@ void find_rate(bool * chain_bool, int pos, double temperature) {
 };
 void change_rate_catalog(bool * chain_bool) {
 	int i = 0;
-	find_rang(chain_bool, mem_pos_to, 400);
+	find_rang(chain_bool, mem_pos_to, Temperature);
 	for (int i = 1; i < 5; i++) {
 		if (chain_bool[(100 + mem_pos_to - i) % 100]) {
-			find_rang(chain_bool, (100 + mem_pos_to - i) % 100, 400);
+			find_rang(chain_bool, (100 + mem_pos_to - i) % 100, Temperature);
 			break;
 		}
 	}
 	for (int i = 1; i < 5; i++) {
 		if (chain_bool[(mem_pos_to + i) % 100]) {
-			find_rang(chain_bool, (mem_pos_to + i) % 100, 400);
+			find_rang(chain_bool, (mem_pos_to + i) % 100, Temperature);
 			break;
 		}
 	}
 };
+
 void choose_event(int * chain_int, bool* chain_bool) {
 	//
-	int k = 0;
+	int k = 1;
 	int m = 0;
 	while (chain_int[m] >= 0) {
 		int pos = (chain_int[m] - 1 + 100) % 100;
 		if (!chain_bool[pos]) {
-			events[k].from = chain_int[k];
+			events[k].from = chain_int[m];
 			events[k].to = pos;
-			events[k].rate = mas_rate[pos].move_left_barieer;
+			events[k].rate = mas_rate[(pos + 1) % 100].rate_left;
 			k++;
 		}
 		pos = (pos + 2) % 100;
 		if (!chain_bool[pos]) {
-			events[k].from = chain_int[k];
+			events[k].from = chain_int[m];
 			events[k].to = pos;
-			events[k].rate = mas_rate[pos].move_right_barieer;
+			events[k].rate = mas_rate[(pos - 1 + 100) % 100].rate_right;
 			k++;
 		}
 		m++;
 	}
-	double * sum = new double[201]; //массив сумм всех вероятностей
+	double sum[201]; //массив сумм всех вероятностей
 
 	sum[0] = 2.7;
 	int i = 1;
-	while (i - 1 < k) {
-		sum[i] = sum[i - 1] + events[i - 1].rate;
+	while (i < k) {
+		sum[i] = sum[i - 1] + events[i].rate;
 		i++;
 	}
 
@@ -166,25 +168,26 @@ void choose_event(int * chain_int, bool* chain_bool) {
 		do {
 			rand2 = (int)(((double)(rand()) / RAND_MAX) * 99); //случайная позиция
 		} while (chain_bool[rand2]); //до тех пор пока не попадем в пустую позицию
-		chain_int[m] = rand2;//?????????????????????????????????????????????????????????????????????????????????????????
+		chain_int[m] = rand2;
 		chain_bool[rand2] = true;
 		mem_pos_to = rand2;
 	}
 	else { //событие движения
 		int t = 0;
-		for (t; chain_int[t] == events[j].from; t++) {}
+		for (t; chain_int[t] != events[j].from && t < 101; t++) {}
+		if (t >= 50) cout << "Out of array" << endl;
 		chain_int[t] = events[j].to;
 		chain_bool[events[j].from] = false;
 		chain_bool[events[j].to] = true;
 		mem_pos_to = events[j].to;
 	}
 
-	delete[] sum;
 }
 
 
 int main()
 {
+	unsigned int start_time = clock();
 	int * chain_int = new int[100];
 	bool * chain_bool = new bool[100];
 	for (int i = 0; i < 100; i++) {
@@ -192,18 +195,36 @@ int main()
 		chain_bool[i] = false;
 	}
 
-
-
-	//1 ЭТАП (Напыление)
-
+	chain_int[0] = 0;
+	chain_bool[0] = true;
+	mem_pos_to = 0;
+	mas_rate[0].rate_left = 462;
+	mas_rate[0].rate_right = 462;
 	choose_event(chain_int, chain_bool);
 	change_rate_catalog(chain_bool);
-	
+
+	//1 ЭТАП (Напыление)
+	for (int i = 1; i < 10000; i++) {
+		if (i % 100 == 0) {
+			for (int k = 0; k < 100; k++) {
+				if (chain_bool[k]) cout << k << ' ';
+			}
+			cout << endl;
+		}
+		choose_event(chain_int, chain_bool);
+		change_rate_catalog(chain_bool);
+	}
+
 
 	delete[] chain_bool;
 	delete[] chain_int;
 	delete[] mas_rate;
 	delete[] events;
-	getchar();
+
+	unsigned int end_time = clock(); // конечное время
+	unsigned int search_time = end_time - start_time; // искомое время
+	setlocale(LC_ALL, "Russian");
+	cout << "Время выполнения программы " <<search_time << " мс" << endl;
+	system("pause");
 	return 0;
 }
