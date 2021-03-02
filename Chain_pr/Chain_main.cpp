@@ -4,7 +4,8 @@
 
 #define K0_const 1e12 //секунда^(-1)
 #define k_bol 8.625E-5 //константа Больцмана еВ/К
-#define Temperature 130 // Kельвин
+#define Temperature_1 130 // Kельвин
+#define Temperature_2 300 //температура отжига
 
 using namespace std;
 struct Rate_Catalog
@@ -152,19 +153,39 @@ void choose_event(int * chain_int, bool* chain_bool, bool new_atoms) {
 	}
 	double sum[201]; //массив сумм всех вероятностей
 
-	sum[0] = 2.7;
+	
+
+	
+
+	if (new_atoms) { // если напыление включено
+		sum[0] = 2.7;
+	}
+	else { //напыление выключено
+		sum[0] = 0;
+	}
+
 	int i = 1;
 	while (i < k) {
 		sum[i] = sum[i - 1] + events[i].rate;
 		i++;
 	}
-
-	double rand1 = ((double)(rand()) / RAND_MAX) * sum[i - 1];
-	int j = 0;
-	for (j; sum[j] <= rand1; j++) {}
+	int r1 = rand();
+	double rand1 = ((double)(r1) / RAND_MAX) * sum[i - 1];
+	int j = new_atoms ? 0 : 1;
+	for (j; sum[j] < rand1; j++) {}
+	if (j >= k) {
+		j = 1;
+		cout << "Out of array events" << endl;
+	}
 
 	if (j == 0) { //событие напыления
+		if (!new_atoms) {
+			cout << "Try to add atom" << endl;
+		}
 		int rand2 = 0;
+		if (chain_int[99] >= 0) {
+			cout << "Too many atoms" << endl;
+		}
 		do {
 			rand2 = (int)(((double)(rand()) / RAND_MAX) * 99); //случайная позиция
 		} while (chain_bool[rand2]); //до тех пор пока не попадем в пустую позицию
@@ -174,8 +195,10 @@ void choose_event(int * chain_int, bool* chain_bool, bool new_atoms) {
 	}
 	else { //событие движения
 		int t = 0;
-		for (t; chain_int[t] != events[j].from && t < 101; t++) {}
-		if (t >= 50) cout << "Out of array" << endl;
+		for (t; chain_int[t] != events[j].from && t < 100; t++) {}
+		if (t >= 100) { 
+			cout << "Out of array chain_int" << endl; 
+		}
 		chain_int[t] = events[j].to;
 		chain_bool[events[j].from] = false;
 		chain_bool[events[j].to] = true;
@@ -197,22 +220,73 @@ int main()
 		chain_bool[i] = false;
 	}
 
+	srand(1);
 
 	//1 ЭТАП (Напыление)
-	for (int i = 1; i < 10000; i++) {
+	for (int i = 1; i < 13000; i++) {
 		if (i % 1000 == 0) {
 			for (int k = 0; k < 100; k++) {
 				if (chain_bool[k]) cout << k << ' ';
 			}
 			cout << endl;
 		}
-		choose_event(chain_int, chain_bool);
-		change_rate_catalog(chain_bool, Temperature);
+		choose_event(chain_int, chain_bool, true);
+		change_rate_catalog(chain_bool, Temperature_1);
 	}
+
 	int count_number_of_adatoms = 0;
 	for (int i = 0; i < 100; i++) { if (chain_bool[i]) count_number_of_adatoms++; }
+	setlocale(LC_ALL, "Russian");
+	cout << "Колличество напыленных атомов: " << count_number_of_adatoms << endl;
 
 	//2 ЭТАП (Отжиг)
+	for (int i = 1; i < 10000; i++) {
+		if (i % 1000 == 0) {
+			int k = 0;
+			int cnt = 0;
+			bool flag;
+			for (k; !chain_bool[k]; k++) {}
+			do {
+				flag = chain_bool[k] == true;
+				if (flag) {
+					cnt++;
+				}
+				else
+				{
+					cout << cnt << " | ";
+					cnt = 0;
+					flag = false;
+				}
+				k++;
+			} while (k < 100); 
+			cout << endl;
+		}
+		choose_event(chain_int, chain_bool, false);
+		change_rate_catalog(chain_bool, Temperature_2);
+	}
+
+	//подсчет распределения
+	bool new_ch = true;
+	int count = 0;
+	int chain_lenth_distribution[100];
+	for (int i = 0; i < 100; i++) {
+		chain_lenth_distribution[i] = 0;
+	}
+	for (int i = 0; i < 100; i++) {
+		new_ch = chain_bool[i] == true;
+		if (new_ch) count++;
+		else {
+			if(count != 0)
+			{
+				chain_lenth_distribution[count]++;
+			}
+		}
+	}
+
+	count = 0;
+	for (int i = 0; i < 100; i++) { if (chain_bool[i]) count++; }
+	cout << "Колличество напыленных атомов: " << count << endl;
+
 
 
 	delete[] chain_bool;
@@ -222,7 +296,6 @@ int main()
 
 	unsigned int end_time = clock(); // конечное время
 	unsigned int search_time = end_time - start_time; // искомое время
-	setlocale(LC_ALL, "Russian");
 	cout << "Время выполнения программы " <<search_time << " мс" << endl;
 	system("pause");
 	return 0;
