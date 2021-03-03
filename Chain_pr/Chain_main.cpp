@@ -8,7 +8,7 @@
 #define Temperature_1 130 // Kельвин
 #define Temperature_2 300 //температура отжига
 
-#define ITERATIONS_OF_EXP 10
+#define ITERATIONS_OF_EXP 100
 
 #define ITERATION_OF_STEP_1 9000
 #define ITERATION_OF_STEP_2 50000
@@ -321,6 +321,7 @@ int main()
 
 	f2out.close();
 	system("output.txt");
+	system("python py_vis.py");
 	system("pause");
 	return 0;
 }
