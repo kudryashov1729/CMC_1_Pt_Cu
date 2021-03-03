@@ -223,7 +223,7 @@ int main()
 	srand(1);
 
 	//1 ЭТАП (Напыление)
-	for (int i = 1; i < 13000; i++) {
+	for (int i = 1; i < 10000; i++) {
 		if (i % 1000 == 0) {
 			for (int k = 0; k < 100; k++) {
 				if (chain_bool[k]) cout << k << ' ';
@@ -240,26 +240,34 @@ int main()
 	cout << "Колличество напыленных атомов: " << count_number_of_adatoms << endl;
 
 	//2 ЭТАП (Отжиг)
-	for (int i = 1; i < 10000; i++) {
-		if (i % 1000 == 0) {
+	for (int i = 1; i < 30000; i++) {
+		if (i % 5000 == 0) {
+			for (int m = 0; m < 100; m++) {
+				if (chain_bool[m]) cout << m << ' ';
+			}
+			cout << endl;
 			int k = 0;
 			int cnt = 0;
-			bool flag;
-			for (k; !chain_bool[k]; k++) {}
-			do {
-				flag = chain_bool[k] == true;
-				if (flag) {
+			for (k; chain_bool[k]; k++) {}
+			for (int n = (k + 1) % 100; n != k; n = (n + 1) % 100) { 
+				if (chain_bool[n]) {
 					cnt++;
 				}
-				else
-				{
-					cout << cnt << " | ";
-					cnt = 0;
-					flag = false;
+				else{
+					if (cnt != 0) {
+						cout << cnt << " | ";
+						cnt = 0;
+					}
 				}
-				k++;
-			} while (k < 100); 
-			cout << endl;
+			}
+			if (cnt != 0) {
+				cout << cnt << endl;
+				cnt = 0;
+			}
+			else {
+				cout << "\b\b" << " " << "\b" << endl;
+			}
+			
 		}
 		choose_event(chain_int, chain_bool, false);
 		change_rate_catalog(chain_bool, Temperature_2);
