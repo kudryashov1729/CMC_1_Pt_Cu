@@ -1,6 +1,7 @@
 #include <iostream>
 #include <math.h>
 #include <ctime>
+#include <fstream>
 
 #define K0_const 1e12 //секунда^(-1)
 #define k_bol 8.625E-5 //константа Больцмана еВ/К
@@ -28,6 +29,7 @@ Rate_Catalog * mas_rate = new Rate_Catalog[100];
 Possible_Events * events = new Possible_Events[201];
 int mem_pos_to = 0;
 
+void file_chain_output(bool * chain_bool, ofstream& f2out);
 void find_rang(bool * chain_bool, int pos, double t) {
 	int l = 1;
 	while (chain_bool[((int)100 + (pos - l)) % 100] != true && l < 5) {// ищем разность позициий данного атома и ближайшего слева
@@ -210,6 +212,9 @@ void choose_event(int * chain_int, bool* chain_bool, bool new_atoms) {
 
 int main()
 {
+	ofstream f2out;
+	f2out.open("output.txt", ios::out);
+
 	unsigned int start_time = clock();
 
 	int * chain_int = new int[100];
@@ -220,11 +225,11 @@ int main()
 		chain_bool[i] = false;
 	}
 
-	srand(1);
+	srand(6);
 
 	//1 ЭТАП (Напыление)
 	for (int i = 1; i < 10000; i++) {
-		if (i % 1000 == 0) {
+		if ((i + 1)  % 10000 == 0) {
 			for (int k = 0; k < 100; k++) {
 				if (chain_bool[k]) cout << k << ' ';
 			}
@@ -233,19 +238,20 @@ int main()
 		choose_event(chain_int, chain_bool, true);
 		change_rate_catalog(chain_bool, Temperature_1);
 	}
+	f2out << "Атомы полсе напыления:" << endl;
+	for (int k = 0; k < 100; k++) {
+		if (chain_bool[k]) f2out << k << ' ';
+	}
+	f2out << endl;
 
 	int count_number_of_adatoms = 0;
 	for (int i = 0; i < 100; i++) { if (chain_bool[i]) count_number_of_adatoms++; }
 	setlocale(LC_ALL, "Russian");
-	cout << "Колличество напыленных атомов: " << count_number_of_adatoms << endl;
+	f2out << "Колличество напыленных атомов: " << count_number_of_adatoms << endl;
 
 	//2 ЭТАП (Отжиг)
-	for (int i = 1; i < 30000; i++) {
-		if (i % 5000 == 0) {
-			for (int m = 0; m < 100; m++) {
-				if (chain_bool[m]) cout << m << ' ';
-			}
-			cout << endl;
+	for (int i = 1; i < 50000; i++) {
+		if (i % 10000 == 0) {
 			int k = 0;
 			int cnt = 0;
 			for (k; chain_bool[k]; k++) {}
@@ -272,6 +278,12 @@ int main()
 		choose_event(chain_int, chain_bool, false);
 		change_rate_catalog(chain_bool, Temperature_2);
 	}
+	f2out << "Атомы полсе отжига:" << endl;
+	for (int k = 0; k < 100; k++) {
+		if (chain_bool[k]) f2out << k << ' ';
+	}
+	f2out << endl << "Длины цепочек:" << endl;
+
 
 	//подсчет распределения
 	bool new_ch = true;
@@ -294,7 +306,7 @@ int main()
 	count = 0;
 	for (int i = 0; i < 100; i++) { if (chain_bool[i]) count++; }
 	cout << "Колличество напыленных атомов: " << count << endl;
-
+	file_chain_output(chain_bool, f2out);
 
 
 	delete[] chain_bool;
@@ -305,6 +317,34 @@ int main()
 	unsigned int end_time = clock(); // конечное время
 	unsigned int search_time = end_time - start_time; // искомое время
 	cout << "Время выполнения программы " <<search_time << " мс" << endl;
+
+	f2out.close();
+	system("output.txt");
 	system("pause");
 	return 0;
+}
+
+void file_chain_output(bool * chain_bool, ofstream& f2out)
+{
+	int k = 0;
+	int cnt = 0;
+	for (k; chain_bool[k]; k++) {}
+	for (int n = (k + 1) % 100; n != k; n = (n + 1) % 100) {
+		if (chain_bool[n]) {
+			cnt++;
+		}
+		else {
+			if (cnt != 0) {
+				f2out << cnt << " | ";
+				cnt = 0;
+			}
+		}
+	}
+	if (cnt != 0) {
+		f2out << cnt << endl;
+		cnt = 0;
+	}
+	else {
+		f2out << endl;
+	}
 }
