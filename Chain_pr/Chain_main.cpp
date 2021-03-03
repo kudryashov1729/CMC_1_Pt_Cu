@@ -8,6 +8,11 @@
 #define Temperature_1 130 // Kельвин
 #define Temperature_2 300 //температура отжига
 
+#define ITERATIONS_OF_EXP 10
+
+#define ITERATION_OF_STEP_1 9000
+#define ITERATION_OF_STEP_2 50000
+
 using namespace std;
 struct Rate_Catalog
 {
@@ -29,6 +34,7 @@ Rate_Catalog * mas_rate = new Rate_Catalog[100];
 Possible_Events * events = new Possible_Events[201];
 int mem_pos_to = 0;
 int chain_lenth_distribution[100];
+unsigned int avg_atoms;
 
 void file_distribution_output(ofstream& f2out);
 void file_chain_output(bool * chain_bool, ofstream& f2out);
@@ -226,8 +232,9 @@ int main()
 		chain_lenth_distribution[i] = 0;
 	}
 
+	avg_atoms = 0;
 
-	for (int index = 0; index < 10; index++) {
+	for (int index = 0; index < ITERATIONS_OF_EXP; index++) {
 		f2out << "\\\\\\\\\\\\\\ \t Серия " << index + 1 << "\t \\\\\\\\\\\\\\" << endl;
 		srand(index);
 		for (int i = 0; i < 100; i++) {
@@ -236,13 +243,13 @@ int main()
 		}
 
 		//1 ЭТАП (Напыление)
-		for (int i = 1; i < 10000 && chain_int[98] < 0; i++) {
-			if ((i + 1) % 10000 == 0) {
+		for (int i = 1; i < ITERATION_OF_STEP_1 && chain_int[98] < 0; i++) {
+			/*if ((i + 1) % 10000 == 0) {
 				for (int k = 0; k < 100; k++) {
 					if (chain_bool[k]) cout << k << ' ';
 				}
 				cout << endl;
-			}
+			}*/
 			choose_event(chain_int, chain_bool, true);
 			change_rate_catalog(chain_bool, Temperature_1);
 		}
@@ -256,9 +263,10 @@ int main()
 		for (int i = 0; i < 100; i++) { if (chain_bool[i]) count_number_of_adatoms++; }
 		setlocale(LC_ALL, "Russian");
 		f2out << "Колличество напыленных атомов: " << count_number_of_adatoms << endl;
+		avg_atoms = avg_atoms + count_number_of_adatoms;
 
 		//2 ЭТАП (Отжиг)
-		for (int i = 1; i < 50000; i++) {
+		for (int i = 1; i < ITERATION_OF_STEP_2; i++) {
 			/*if (i % 10000 == 0) {
 				int k = 0;
 				int cnt = 0;
@@ -299,13 +307,7 @@ int main()
 	}
 
 	//Вывод распределения в файл
-	file_distribution_output(f2out);
-
-	
-
-
-
-	
+	file_distribution_output(f2out); 
 
 
 	delete[] chain_bool;
@@ -352,6 +354,7 @@ void file_chain_output(bool * chain_bool, ofstream& f2out)
 
 void file_distribution_output(ofstream& f2out) 
 {
+	f2out << "Среднее число напыленных атомов: " << avg_atoms / (ITERATIONS_OF_EXP + 1) << endl;
 	f2out << endl << "(Длина, число отсчетов)" << endl;
 	for (int i = 0; i < 50; i++) {
 		f2out << i << " " << chain_lenth_distribution[i] << endl;
