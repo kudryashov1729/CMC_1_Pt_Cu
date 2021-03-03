@@ -6,7 +6,7 @@
 #define K0_const 1e12 //секунда^(-1)
 #define k_bol 8.625E-5 //константа Больцмана еВ/К
 #define Temperature_1 130 // Kельвин
-#define Temperature_2 300 //температура отжига
+#define Temperature_2 200 //температура отжига
 
 #define ITERATIONS_OF_EXP 100
 
@@ -308,7 +308,19 @@ int main()
 
 	//Вывод распределения в файл
 	file_distribution_output(f2out); 
+	int t1 = Temperature_1;
+	int t2 = Temperature_2;
+	int it_ex = ITERATIONS_OF_EXP;
+	int it_s1 = ITERATION_OF_STEP_1;
+	int it_s2 = ITERATION_OF_STEP_2;
 
+	f2out << -1 << endl;
+	f2out << "Температура напыления: " << t1 << endl;
+	f2out << "Температура отжига: " << t2 << endl;
+	f2out << "Количество повторений эксперимента: " << it_ex << endl;
+	f2out << "Количество повторений напыления: " << it_s1 << endl;
+	f2out << "Количество повторений отжига: " << it_s2 << endl;
+	f2out << "Среднее число напыленных атомов: " << avg_atoms / (ITERATIONS_OF_EXP + 1) << endl;
 
 	delete[] chain_bool;
 	delete[] chain_int;
@@ -320,7 +332,7 @@ int main()
 	cout << "Время выполнения программы " <<search_time << " мс" << endl;
 
 	f2out.close();
-	system("output.txt");
+	//system("output.txt");
 	system("python py_vis.py");
 	system("pause");
 	return 0;
@@ -357,10 +369,10 @@ void file_distribution_output(ofstream& f2out)
 {
 	f2out << "Среднее число напыленных атомов: " << avg_atoms / (ITERATIONS_OF_EXP + 1) << endl;
 	f2out << endl << "(Длина, число отсчетов)" << endl;
-	for (int i = 0; i < 50; i++) {
+	for (int i = 0; i < 40; i++) {
 		f2out << i << " " << chain_lenth_distribution[i] << endl;
 	}
-	for (int i = 50; i < 100; i++) {
+	for (int i = 40; i < 100; i++) {
 		if (chain_lenth_distribution[i] != 0) f2out << i << " " << chain_lenth_distribution[i] << endl;
 	}
 }
