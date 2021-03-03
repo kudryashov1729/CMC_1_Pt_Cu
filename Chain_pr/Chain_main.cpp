@@ -28,7 +28,9 @@ void find_rate(bool * chain_bool, int pos, double temperature);
 Rate_Catalog * mas_rate = new Rate_Catalog[100];
 Possible_Events * events = new Possible_Events[201];
 int mem_pos_to = 0;
+int chain_lenth_distribution[100];
 
+void file_distribution_output(ofstream& f2out);
 void file_chain_output(bool * chain_bool, ofstream& f2out);
 void find_rang(bool * chain_bool, int pos, double t) {
 	int l = 1;
@@ -221,92 +223,89 @@ int main()
 	bool * chain_bool = new bool[100];
 
 	for (int i = 0; i < 100; i++) {
-		chain_int[i] = -1;
-		chain_bool[i] = false;
-	}
-
-	srand(6);
-
-	//1 ЭТАП (Напыление)
-	for (int i = 1; i < 10000; i++) {
-		if ((i + 1)  % 10000 == 0) {
-			for (int k = 0; k < 100; k++) {
-				if (chain_bool[k]) cout << k << ' ';
-			}
-			cout << endl;
-		}
-		choose_event(chain_int, chain_bool, true);
-		change_rate_catalog(chain_bool, Temperature_1);
-	}
-	f2out << "Атомы полсе напыления:" << endl;
-	for (int k = 0; k < 100; k++) {
-		if (chain_bool[k]) f2out << k << ' ';
-	}
-	f2out << endl;
-
-	int count_number_of_adatoms = 0;
-	for (int i = 0; i < 100; i++) { if (chain_bool[i]) count_number_of_adatoms++; }
-	setlocale(LC_ALL, "Russian");
-	f2out << "Колличество напыленных атомов: " << count_number_of_adatoms << endl;
-
-	//2 ЭТАП (Отжиг)
-	for (int i = 1; i < 50000; i++) {
-		if (i % 10000 == 0) {
-			int k = 0;
-			int cnt = 0;
-			for (k; chain_bool[k]; k++) {}
-			for (int n = (k + 1) % 100; n != k; n = (n + 1) % 100) { 
-				if (chain_bool[n]) {
-					cnt++;
-				}
-				else{
-					if (cnt != 0) {
-						cout << cnt << " | ";
-						cnt = 0;
-					}
-				}
-			}
-			if (cnt != 0) {
-				cout << cnt << endl;
-				cnt = 0;
-			}
-			else {
-				cout << "\b\b" << " " << "\b" << endl;
-			}
-			
-		}
-		choose_event(chain_int, chain_bool, false);
-		change_rate_catalog(chain_bool, Temperature_2);
-	}
-	f2out << "Атомы полсе отжига:" << endl;
-	for (int k = 0; k < 100; k++) {
-		if (chain_bool[k]) f2out << k << ' ';
-	}
-	f2out << endl << "Длины цепочек:" << endl;
-
-
-	//подсчет распределения
-	bool new_ch = true;
-	int count = 0;
-	int chain_lenth_distribution[100];
-	for (int i = 0; i < 100; i++) {
 		chain_lenth_distribution[i] = 0;
 	}
-	for (int i = 0; i < 100; i++) {
-		new_ch = chain_bool[i] == true;
-		if (new_ch) count++;
-		else {
-			if(count != 0)
-			{
-				chain_lenth_distribution[count]++;
-			}
+
+
+	for (int index = 0; index < 10; index++) {
+		f2out << "\\\\\\\\\\\\\\ \t Серия " << index + 1 << "\t \\\\\\\\\\\\\\" << endl;
+		srand(index);
+		for (int i = 0; i < 100; i++) {
+			chain_int[i] = -1;
+			chain_bool[i] = false;
 		}
+
+		//1 ЭТАП (Напыление)
+		for (int i = 1; i < 10000 && chain_int[98] < 0; i++) {
+			if ((i + 1) % 10000 == 0) {
+				for (int k = 0; k < 100; k++) {
+					if (chain_bool[k]) cout << k << ' ';
+				}
+				cout << endl;
+			}
+			choose_event(chain_int, chain_bool, true);
+			change_rate_catalog(chain_bool, Temperature_1);
+		}
+		f2out << "Атомы полсе напыления:" << endl;
+		for (int k = 0; k < 100; k++) {
+			if (chain_bool[k]) f2out << k << ' ';
+		}
+		f2out << endl;
+
+		int count_number_of_adatoms = 0;
+		for (int i = 0; i < 100; i++) { if (chain_bool[i]) count_number_of_adatoms++; }
+		setlocale(LC_ALL, "Russian");
+		f2out << "Колличество напыленных атомов: " << count_number_of_adatoms << endl;
+
+		//2 ЭТАП (Отжиг)
+		for (int i = 1; i < 50000; i++) {
+			/*if (i % 10000 == 0) {
+				int k = 0;
+				int cnt = 0;
+				for (k; chain_bool[k]; k++) {}
+				for (int n = (k + 1) % 100; n != k; n = (n + 1) % 100) {
+					if (chain_bool[n]) {
+						cnt++;
+					}
+					else {
+						if (cnt != 0) {
+							cout << cnt << " | ";
+							cnt = 0;
+						}
+					}
+				}
+				if (cnt != 0) {
+					cout << cnt << endl;
+					cnt = 0;
+				}
+				else {
+					cout << "\b\b" << " " << "\b" << endl;
+				}
+
+			}*/
+			choose_event(chain_int, chain_bool, false);
+			change_rate_catalog(chain_bool, Temperature_2);
+		}
+		f2out << "Атомы поcле отжига:" << endl;
+		for (int k = 0; k < 100; k++) {
+			if (chain_bool[k]) f2out << k << ' ';
+		}
+		f2out << endl << "Длины цепочек:" << endl;
+		file_chain_output(chain_bool, f2out); //подсчет распределения
+
+		f2out << endl;
+
+
 	}
 
-	count = 0;
-	for (int i = 0; i < 100; i++) { if (chain_bool[i]) count++; }
-	cout << "Колличество напыленных атомов: " << count << endl;
-	file_chain_output(chain_bool, f2out);
+	//Вывод распределения в файл
+	file_distribution_output(f2out);
+
+	
+
+
+
+	
 
 
 	delete[] chain_bool;
@@ -336,15 +335,28 @@ void file_chain_output(bool * chain_bool, ofstream& f2out)
 		else {
 			if (cnt != 0) {
 				f2out << cnt << " | ";
+				chain_lenth_distribution[cnt]++;
 				cnt = 0;
 			}
 		}
 	}
 	if (cnt != 0) {
 		f2out << cnt << endl;
+		chain_lenth_distribution[cnt]++;
 		cnt = 0;
 	}
 	else {
 		f2out << endl;
+	}
+}
+
+void file_distribution_output(ofstream& f2out) 
+{
+	f2out << endl << "(Длина, число отсчетов)" << endl;
+	for (int i = 0; i < 50; i++) {
+		f2out << i << " " << chain_lenth_distribution[i] << endl;
+	}
+	for (int i = 50; i < 100; i++) {
+		if (chain_lenth_distribution[i] != 0) f2out << i << " " << chain_lenth_distribution[i] << endl;
 	}
 }
