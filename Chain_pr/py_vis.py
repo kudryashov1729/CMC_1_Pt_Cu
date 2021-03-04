@@ -20,6 +20,7 @@ while line != "-1\n":
         y.append(int(line.rsplit()[1]))
     line = f.readline()
 
+print(y)
 
 text = []
 while line:
@@ -28,28 +29,36 @@ while line:
 
 f.close()
 
-y = np.array(y, dtype=float)
-y /= np.sum(y)
+
 
 box_1 = {'facecolor':'white',    #  цвет области
        'edgecolor': 'black',     #  цвет крайней линии
        'boxstyle': 'round'}    #  стиль области
 s = ''.join(map(str, text[0]))
-# a = int(max(x))
-# b = int(max(y))
+
+
+y = np.array(y, dtype=float)
+y /= np.sum(y)
+
+a = int(max(x))
+
 
 ax = plt.axes()
+
+ax.bar(x, y)
 ax.grid()
-# plt.xlim([0, a])
-# plt.ylim([0, b])
-# ax.text(a, b, s,
-        # bbox = box_1,
-        # horizontalalignment = 'right', # выравнивание
-        # verticalalignment = 'top',
-        # color = 'black',
-        # fontsize = 10)
+
+b, t = plt.ylim()
+plt.xlim([0,a])
+
+ax.text(a, t, s,
+        bbox = box_1,
+        horizontalalignment = 'right', # выравнивание
+        verticalalignment = 'top',
+        color = 'black',
+        fontsize = 10)
 plt.ylabel("Число отсчетов")
 plt.xlabel("Длина цепочки")
 
-ax.bar(x, y)
+
 plt.show()

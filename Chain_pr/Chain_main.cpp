@@ -6,17 +6,18 @@
 #define K0_const 1e12 //секунда^(-1)
 #define k_bol 8.625E-5 //константа Больцмана еВ/К
 #define Temperature_1 130 // Kельвин
-#define Temperature_2 160 //температура отжига
+#define Temperature_2 160 //температура не исп
+#define TAY 30//[секунды] тау в показателе экспаненты изменения температуры
 
-#define ITERATIONS_OF_EXP 1
+#define ITERATIONS_OF_EXP 400
 
 #define ITERATION_OF_STEP_1 15000
-#define ITERATION_OF_STEP_2 60000
+#define ITERATION_OF_STEP_2 40000
 
 using namespace std;
+
 struct Rate_Catalog
 {
-	int pos_from; //[0,99]
 	double move_left_barieer;   
 	double move_right_barieer;   
 	double rate_left;
@@ -32,14 +33,15 @@ void find_rate(bool * chain_bool, int pos, double temperature);
 
 Rate_Catalog * mas_rate = new Rate_Catalog[100];
 Possible_Events * events = new Possible_Events[201];
-int mem_pos_to = 0;
+int mem_pos_to = 0; /////не используется
 int chain_lenth_distribution[100];
 double time1;
 unsigned int avg_atoms;
+double T1;
 
 void file_distribution_output(ofstream& f2out);
 void file_chain_output(bool * chain_bool, ofstream& f2out);
-void find_rang(bool * chain_bool, int pos, double t) {
+void find_rang(bool * chain_bool, int pos, double t) { // содержит вызов find_rate()
 	int l = 1;
 	while (chain_bool[((int)100 + (pos - l)) % 100] != true && l < 5) {// ищем разность позициий данного атома и ближайшего слева
 		l++;
@@ -117,7 +119,7 @@ void find_rang(bool * chain_bool, int pos, double t) {
 		}
 	}
 	find_rate(chain_bool, pos, t);
-};
+}; 
 void find_rate(bool * chain_bool, int pos, double temperature) {
 	if(mas_rate[pos].move_left_barieer > 0)
 	mas_rate[pos].rate_left = (double)( K0_const )* exp((double)((-1)* mas_rate[pos].move_left_barieer / (k_bol) / temperature));
@@ -125,7 +127,14 @@ void find_rate(bool * chain_bool, int pos, double temperature) {
 	mas_rate[pos].rate_right = (double)( K0_const )* exp((double)((-1)* mas_rate[pos].move_right_barieer / (k_bol) / temperature));
 };
 void change_rate_catalog(bool * chain_bool, double t) {
-	int i = 0;
+
+	for (int i = 0; i < 100; i++) {
+		if (chain_bool[i]) {
+			find_rang(chain_bool, i, t);
+		}
+	}
+
+	/*int i = 0;
 	find_rang(chain_bool, mem_pos_to, t);
 	for (int i = 1; i < 5; i++) {
 		if (chain_bool[(100 + mem_pos_to - i) % 100]) {
@@ -138,7 +147,7 @@ void change_rate_catalog(bool * chain_bool, double t) {
 			find_rang(chain_bool, (mem_pos_to + i) % 100, t);
 			break;
 		}
-	}
+	}*/
 };
 
 void choose_event(int * chain_int, bool* chain_bool, bool new_atoms) {
@@ -147,14 +156,14 @@ void choose_event(int * chain_int, bool* chain_bool, bool new_atoms) {
 	int m = 0;
 	while (chain_int[m] >= 0) {
 		int pos = (chain_int[m] - 1 + 100) % 100;
-		if (!chain_bool[pos]) {
+		if (!chain_bool[pos]) { // если слева от атома есть место
 			events[k].from = chain_int[m];
 			events[k].to = pos;
 			events[k].rate = mas_rate[(pos + 1) % 100].rate_left;
 			k++;
 		}
 		pos = (pos + 2) % 100;
-		if (!chain_bool[pos]) {
+		if (!chain_bool[pos]) { // если справа от атома есть место
 			events[k].from = chain_int[m];
 			events[k].to = pos;
 			events[k].rate = mas_rate[(pos - 1 + 100) % 100].rate_right;
@@ -164,9 +173,6 @@ void choose_event(int * chain_int, bool* chain_bool, bool new_atoms) {
 	}
 	double sum[201]; //массив сумм всех вероятностей
 
-	
-
-	
 
 	if (new_atoms) { // если напыление включено
 		sum[0] = 2.7;
@@ -213,7 +219,7 @@ void choose_event(int * chain_int, bool* chain_bool, bool new_atoms) {
 		chain_int[t] = events[j].to;
 		chain_bool[events[j].from] = false;
 		chain_bool[events[j].to] = true;
-		mem_pos_to = events[j].to;
+		mem_pos_to = events[j].to; /////не используется
 	}
 	//Счет времени
 	int r2 = rand() + 1;
@@ -224,6 +230,7 @@ void choose_event(int * chain_int, bool* chain_bool, bool new_atoms) {
 
 int main()
 {
+	setlocale(LC_ALL, "Russian");
 	ofstream f2out;
 	f2out.open("output.txt", ios::out);
 
@@ -237,20 +244,30 @@ int main()
 	}
 
 	avg_atoms = 0;
-	time1 = 0;
+	double avg1_time = 0;
+	double avg2_time = 0;
+	double avg1_temp = 0;
+	double avg2_temp = 0;
 
 	for (int index = 0; index < ITERATIONS_OF_EXP; index++) {
+
+		T1 = Temperature_1;
+		time1 = 0;
+
 		f2out << "\\\\\\\\\\\\\\ \t Серия " << index + 1 << "\t \\\\\\\\\\\\\\" << endl;
-		srand(index);
+		srand(index + 500);
 		for (int i = 0; i < 100; i++) {
 			chain_int[i] = -1;
 			chain_bool[i] = false;
 		}
-
+		
 		//1 ЭТАП (Напыление)
 		for (int i = 1; (i < ITERATION_OF_STEP_1) && chain_int[35] < 0; i++) {
+
 			choose_event(chain_int, chain_bool, true);
-			change_rate_catalog(chain_bool, Temperature_1);
+			change_rate_catalog(chain_bool, T1);
+
+			T1 = Temperature_1 * exp((-1) * time1 / TAY);
 		}
 
 		//вывод в файл
@@ -259,13 +276,15 @@ int main()
 			if (chain_bool[k]) f2out << k << ' ';
 		}
 		f2out << endl;
-
+		f2out << "Температура после напыления: " << T1 << endl;
 		int count_number_of_adatoms = 0;
 		for (int i = 0; i < 100; i++) { if (chain_bool[i]) count_number_of_adatoms++; }
-		setlocale(LC_ALL, "Russian");
 		//f2out << "Колличество напыленных атомов: " << count_number_of_adatoms << endl;
 		avg_atoms = avg_atoms + count_number_of_adatoms;
-		f2out << "Время: " << time1 << endl;
+		f2out << "Время напыления: " << time1 << endl;
+
+		avg1_time += time1;
+		avg1_temp += T1;
 
 		//2 ЭТАП (Отжиг)
 		for (int i = 1; i < ITERATION_OF_STEP_2; i++) {
@@ -295,6 +314,7 @@ int main()
 			}*/
 			choose_event(chain_int, chain_bool, false);
 			change_rate_catalog(chain_bool, Temperature_2);
+			T1 = Temperature_1 * exp((-1) * time1 / TAY);
 		}
 		f2out << "Атомы поcле отжига:" << endl;
 		for (int k = 0; k < 100; k++) {
@@ -302,27 +322,38 @@ int main()
 		}
 		f2out << endl << "Длины цепочек:" << endl;
 		file_chain_output(chain_bool, f2out); //подсчет распределения
-
+		f2out << "Температура после отжига: " << T1 << endl;
+		f2out << "Время отжига: " << time1 << endl;
 		f2out << endl;
 
+		avg2_time += time1;
+		avg2_temp += T1;
 
 	}
 
-	//Вывод распределения в файл
+	//Вывод результатов в файл
 	file_distribution_output(f2out); 
 	int t1 = Temperature_1;
 	int t2 = Temperature_2;
 	int it_ex = ITERATIONS_OF_EXP;
 	int it_s1 = ITERATION_OF_STEP_1;
 	int it_s2 = ITERATION_OF_STEP_2;
+	float tay = TAY;
 
 	f2out << -1 << endl;
-	f2out << "Температура напыления: " << t1 << endl;
-	f2out << "Температура отжига: " << t2 << endl;
+	f2out << "Начальная температура: " << t1 << endl;
 	f2out << "Количество повторений эксперимента: " << it_ex << endl;
-	f2out << "Количество повторений напыления: " << it_s1 << endl;
 	f2out << "Количество повторений отжига: " << it_s2 << endl;
-	f2out << "Среднее число напыленных атомов: " << avg_atoms / (ITERATIONS_OF_EXP + 1) << endl;
+	f2out << "Число напыленных атомов: " << avg_atoms / (ITERATIONS_OF_EXP) << "/100" << endl;
+	f2out << "Тау: " << tay << " секунд" << endl;
+
+	f2out << "Среднее время отжига: " << avg1_time / (ITERATIONS_OF_EXP) << endl;
+	f2out << "Среднее время эксперимента: " << avg2_time / (ITERATIONS_OF_EXP) << endl;
+	f2out << "Среднее темература после напыления: " << avg1_temp / (ITERATIONS_OF_EXP) << endl;
+	f2out << "Среднее температура после отжига: " << avg2_temp / (ITERATIONS_OF_EXP) << endl;
+	
+	
+	
 
 	delete[] chain_bool;
 	delete[] chain_int;
@@ -335,7 +366,7 @@ int main()
 
 	f2out.close();
 	//system("output.txt");
-	//system("python py_vis.py");
+	system("python py_vis.py");
 	system("pause");
 	return 0;
 }
