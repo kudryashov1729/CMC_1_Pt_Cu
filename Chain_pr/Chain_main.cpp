@@ -6,12 +6,12 @@
 #define K0_const 1e12 //секунда^(-1)
 #define k_bol 8.625E-5 //константа Больцмана еВ/К
 #define Temperature_1 130 // Kельвин
-#define Temperature_2 200 //температура отжига
+#define Temperature_2 160 //температура отжига
 
-#define ITERATIONS_OF_EXP 100
+#define ITERATIONS_OF_EXP 1
 
-#define ITERATION_OF_STEP_1 9000
-#define ITERATION_OF_STEP_2 50000
+#define ITERATION_OF_STEP_1 15000
+#define ITERATION_OF_STEP_2 60000
 
 using namespace std;
 struct Rate_Catalog
@@ -34,6 +34,7 @@ Rate_Catalog * mas_rate = new Rate_Catalog[100];
 Possible_Events * events = new Possible_Events[201];
 int mem_pos_to = 0;
 int chain_lenth_distribution[100];
+double time1;
 unsigned int avg_atoms;
 
 void file_distribution_output(ofstream& f2out);
@@ -214,7 +215,10 @@ void choose_event(int * chain_int, bool* chain_bool, bool new_atoms) {
 		chain_bool[events[j].to] = true;
 		mem_pos_to = events[j].to;
 	}
-
+	//Счет времени
+	int r2 = rand() + 1;
+	double l = log((RAND_MAX + 1) / double(r2));
+	time1 = time1 + (1 / sum[i - 1]) * l;
 }
 
 
@@ -233,6 +237,7 @@ int main()
 	}
 
 	avg_atoms = 0;
+	time1 = 0;
 
 	for (int index = 0; index < ITERATIONS_OF_EXP; index++) {
 		f2out << "\\\\\\\\\\\\\\ \t Серия " << index + 1 << "\t \\\\\\\\\\\\\\" << endl;
@@ -243,16 +248,12 @@ int main()
 		}
 
 		//1 ЭТАП (Напыление)
-		for (int i = 1; i < ITERATION_OF_STEP_1 && chain_int[98] < 0; i++) {
-			/*if ((i + 1) % 10000 == 0) {
-				for (int k = 0; k < 100; k++) {
-					if (chain_bool[k]) cout << k << ' ';
-				}
-				cout << endl;
-			}*/
+		for (int i = 1; (i < ITERATION_OF_STEP_1) && chain_int[35] < 0; i++) {
 			choose_event(chain_int, chain_bool, true);
 			change_rate_catalog(chain_bool, Temperature_1);
 		}
+
+		//вывод в файл
 		f2out << "Атомы полсе напыления:" << endl;
 		for (int k = 0; k < 100; k++) {
 			if (chain_bool[k]) f2out << k << ' ';
@@ -264,6 +265,7 @@ int main()
 		setlocale(LC_ALL, "Russian");
 		f2out << "Колличество напыленных атомов: " << count_number_of_adatoms << endl;
 		avg_atoms = avg_atoms + count_number_of_adatoms;
+		f2out << "Время: " << time1 << endl;
 
 		//2 ЭТАП (Отжиг)
 		for (int i = 1; i < ITERATION_OF_STEP_2; i++) {
@@ -333,7 +335,7 @@ int main()
 
 	f2out.close();
 	//system("output.txt");
-	system("python py_vis.py");
+	//system("python py_vis.py");
 	system("pause");
 	return 0;
 }
@@ -367,7 +369,7 @@ void file_chain_output(bool * chain_bool, ofstream& f2out)
 
 void file_distribution_output(ofstream& f2out) 
 {
-	f2out << "Среднее число напыленных атомов: " << avg_atoms / (ITERATIONS_OF_EXP + 1) << endl;
+	f2out << "Среднее число напыленных атомов: " << avg_atoms / (ITERATIONS_OF_EXP) << endl;
 	f2out << endl << "(Длина, число отсчетов)" << endl;
 	for (int i = 0; i < 40; i++) {
 		f2out << i << " " << chain_lenth_distribution[i] << endl;
