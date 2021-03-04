@@ -254,7 +254,7 @@ int main()
 		}
 
 		//вывод в файл
-		f2out << "Атомы полсе напыления:" << endl;
+		f2out << "Атомы поcле напыления:" << endl;
 		for (int k = 0; k < 100; k++) {
 			if (chain_bool[k]) f2out << k << ' ';
 		}
@@ -263,7 +263,7 @@ int main()
 		int count_number_of_adatoms = 0;
 		for (int i = 0; i < 100; i++) { if (chain_bool[i]) count_number_of_adatoms++; }
 		setlocale(LC_ALL, "Russian");
-		f2out << "Колличество напыленных атомов: " << count_number_of_adatoms << endl;
+		//f2out << "Колличество напыленных атомов: " << count_number_of_adatoms << endl;
 		avg_atoms = avg_atoms + count_number_of_adatoms;
 		f2out << "Время: " << time1 << endl;
 
