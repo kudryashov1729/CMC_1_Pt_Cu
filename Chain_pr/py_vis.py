@@ -20,7 +20,6 @@ while line != "-1\n":
         y.append(int(line.rsplit()[1]))
     line = f.readline()
 
-print(y)
 
 text = []
 while line:

@@ -5,14 +5,14 @@
 
 #define K0_const 1e12 //секунда^(-1)
 #define k_bol 8.625E-5 //константа Больцмана еВ/К
-#define Temperature_1 130 // Kельвин
-#define Temperature_2 160 //температура не исп
-#define TAY 30//[секунды] тау в показателе экспаненты изменения температуры
+#define Temperature_1 150 // Kельвин
+#define Temperature_2 60 //температура не исп
+#define TAY 900//[секунды] тау в показателе экспаненты изменения температуры
 
-#define ITERATIONS_OF_EXP 400
+#define ITERATIONS_OF_EXP 10
 
-#define ITERATION_OF_STEP_1 15000
-#define ITERATION_OF_STEP_2 40000
+#define ITERATION_OF_STEP_1 100000
+#define ITERATION_OF_STEP_2 100000
 
 using namespace std;
 
@@ -192,16 +192,16 @@ void choose_event(int * chain_int, bool* chain_bool, bool new_atoms) {
 	for (j; sum[j] < rand1; j++) {}
 	if (j >= k) {
 		j = 1;
-		cout << "Out of array events" << endl;
+		std::cout << "Out of array events" << endl;
 	}
 
 	if (j == 0) { //событие напыления
 		if (!new_atoms) {
-			cout << "Try to add atom" << endl;
+			std::cout << "Try to add atom" << endl;
 		}
 		int rand2 = 0;
 		if (chain_int[99] >= 0) {
-			cout << "Too many atoms" << endl;
+			std::cout << "Too many atoms" << endl;
 		}
 		do {
 			rand2 = (int)(((double)(rand()) / RAND_MAX) * 99); //случайная позиция
@@ -214,7 +214,7 @@ void choose_event(int * chain_int, bool* chain_bool, bool new_atoms) {
 		int t = 0;
 		for (t; chain_int[t] != events[j].from && t < 100; t++) {}
 		if (t >= 100) { 
-			cout << "Out of array chain_int" << endl; 
+			std::cout << "Out of array chain_int" << endl;
 		}
 		chain_int[t] = events[j].to;
 		chain_bool[events[j].from] = false;
@@ -251,11 +251,13 @@ int main()
 
 	for (int index = 0; index < ITERATIONS_OF_EXP; index++) {
 
+		//if (int(index % int(ITERATIONS_OF_EXP / 100)) == 0) std::cout << "\r" << int(100 * double(index) / ITERATIONS_OF_EXP) <<  "%";
+		//if ((index + 1) % ITERATIONS_OF_EXP == 0) std::cout << endl;
 		T1 = Temperature_1;
 		time1 = 0;
 
 		f2out << "\\\\\\\\\\\\\\ \t Серия " << index + 1 << "\t \\\\\\\\\\\\\\" << endl;
-		srand(index + 500);
+		srand(index + 30);
 		for (int i = 0; i < 100; i++) {
 			chain_int[i] = -1;
 			chain_bool[i] = false;
@@ -287,7 +289,7 @@ int main()
 		avg1_temp += T1;
 
 		//2 ЭТАП (Отжиг)
-		for (int i = 1; i < ITERATION_OF_STEP_2; i++) {
+		for (int i = 1; i < ITERATION_OF_STEP_2 && (T1 > Temperature_2); i++) {
 			/*if (i % 10000 == 0) {
 				int k = 0;
 				int cnt = 0;
@@ -362,12 +364,12 @@ int main()
 
 	unsigned int end_time = clock(); // конечное время
 	unsigned int search_time = end_time - start_time; // искомое время
-	cout << "Время выполнения программы " <<search_time << " мс" << endl;
+	std::cout << "Время выполнения программы " <<search_time << " мс" << endl;
 
 	f2out.close();
 	//system("output.txt");
-	system("python py_vis.py");
-	system("pause");
+	std::system("python py_vis.py");
+	std::system("pause");
 	return 0;
 }
 
