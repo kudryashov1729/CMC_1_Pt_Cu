@@ -5,14 +5,14 @@
 
 #define K0_const 1e12 //секунда^(-1)
 #define k_bol 8.625E-5 //константа Больцмана еВ/К
-#define Temperature_1 150 // Kельвин
-#define Temperature_2 60 //температура не исп
-#define TAY 900//[секунды] тау в показателе экспаненты изменения температуры
+#define Temperature_1 150 // Kельвин начальная температура
+#define Temperature_2 120 // конечная температура
+#define TAY 500//[секунды] тау в показателе экспаненты изменения температуры
 
-#define ITERATIONS_OF_EXP 10
+#define ITERATIONS_OF_EXP 100
 
-#define ITERATION_OF_STEP_1 100000
-#define ITERATION_OF_STEP_2 100000
+#define ITERATION_OF_STEP_1 1000000
+#define ITERATION_OF_STEP_2 10000000
 
 using namespace std;
 
@@ -33,7 +33,7 @@ void find_rate(bool * chain_bool, int pos, double temperature);
 
 Rate_Catalog * mas_rate = new Rate_Catalog[100];
 Possible_Events * events = new Possible_Events[201];
-int mem_pos_to = 0; /////не используется
+int mem_pos_to = 0; 
 int chain_lenth_distribution[100];
 double time1;
 unsigned int avg_atoms;
@@ -126,15 +126,16 @@ void find_rate(bool * chain_bool, int pos, double temperature) {
 	if (mas_rate[pos].move_right_barieer > 0)
 	mas_rate[pos].rate_right = (double)( K0_const )* exp((double)((-1)* mas_rate[pos].move_right_barieer / (k_bol) / temperature));
 };
-void change_rate_catalog(bool * chain_bool, double t) {
-
+void create_rate_catalog(bool * chain_bool, double t) {
 	for (int i = 0; i < 100; i++) {
 		if (chain_bool[i]) {
 			find_rang(chain_bool, i, t);
 		}
 	}
-
-	/*int i = 0;
+};
+void change_rate_catalog(bool * chain_bool, double t)
+{
+	int i = 0;
 	find_rang(chain_bool, mem_pos_to, t);
 	for (int i = 1; i < 5; i++) {
 		if (chain_bool[(100 + mem_pos_to - i) % 100]) {
@@ -147,9 +148,8 @@ void change_rate_catalog(bool * chain_bool, double t) {
 			find_rang(chain_bool, (mem_pos_to + i) % 100, t);
 			break;
 		}
-	}*/
+	}
 };
-
 void choose_event(int * chain_int, bool* chain_bool, bool new_atoms) {
 	//
 	int k = 1;
@@ -251,8 +251,8 @@ int main()
 
 	for (int index = 0; index < ITERATIONS_OF_EXP; index++) {
 
-		//if (int(index % int(ITERATIONS_OF_EXP / 100)) == 0) std::cout << "\r" << int(100 * double(index) / ITERATIONS_OF_EXP) <<  "%";
-		//if ((index + 1) % ITERATIONS_OF_EXP == 0) std::cout << endl;
+		if (int(index % int(ITERATIONS_OF_EXP / 100)) == 0) std::cout << "\r" << int(100 * double(index) / ITERATIONS_OF_EXP) <<  "%";
+		if ((index + 1) % ITERATIONS_OF_EXP == 0) std::cout << endl;
 		T1 = Temperature_1;
 		time1 = 0;
 
@@ -269,8 +269,10 @@ int main()
 			choose_event(chain_int, chain_bool, true);
 			change_rate_catalog(chain_bool, T1);
 
-			T1 = Temperature_1 * exp((-1) * time1 / TAY);
+			//T1 = Temperature_1 * exp((-1) * time1 / TAY);
 		}
+		//if (T1 <= Temperature_2) std::cout << "Напыление вышло за границу второй температуры, т.е. нет отжига!" << endl;
+		if (chain_int[35] < 0) std::cout << "Не напылилось достаточное количество атомов!" << endl;
 
 		//вывод в файл
 		f2out << "Атомы поcле напыления:" << endl;
@@ -288,36 +290,29 @@ int main()
 		avg1_time += time1;
 		avg1_temp += T1;
 
-		//2 ЭТАП (Отжиг)
-		for (int i = 1; i < ITERATION_OF_STEP_2 && (T1 > Temperature_2); i++) {
-			/*if (i % 10000 == 0) {
-				int k = 0;
-				int cnt = 0;
-				for (k; chain_bool[k]; k++) {}
-				for (int n = (k + 1) % 100; n != k; n = (n + 1) % 100) {
-					if (chain_bool[n]) {
-						cnt++;
-					}
-					else {
-						if (cnt != 0) {
-							cout << cnt << " | ";
-							cnt = 0;
-						}
-					}
-				}
-				if (cnt != 0) {
-					cout << cnt << endl;
-					cnt = 0;
-				}
-				else {
-					cout << "\b\b" << " " << "\b" << endl;
-				}
-
-			}*/
-			choose_event(chain_int, chain_bool, false);
-			change_rate_catalog(chain_bool, Temperature_2);
-			T1 = Temperature_1 * exp((-1) * time1 / TAY);
+		time1 = 0;
+		if (index == 1) {
+			ofstream fout;
+			fout.open("output_temperature.txt", ios::out);
+			//2 ЭТАП (Отжиг)
+			for (int i = 1; i < ITERATION_OF_STEP_2 && (T1 > Temperature_2); i++) {
+				choose_event(chain_int, chain_bool, false);
+				create_rate_catalog(chain_bool, T1);
+				T1 = Temperature_1 * exp((-1) * time1 / TAY);
+				fout << time1 << " " << T1 << endl;
+			}
+			fout.close();
 		}
+		else {
+			//2 ЭТАП (Отжиг)
+			for (int i = 1; i < ITERATION_OF_STEP_2 && (T1 > Temperature_2); i++) {
+				choose_event(chain_int, chain_bool, false);
+				create_rate_catalog(chain_bool, T1);
+				T1 = Temperature_1 * exp((-1) * time1 / TAY);
+			}
+		}
+		if (T1 > Temperature_2) std::cout << "Вышли за границу итераций на этапе напыления, не достигнув нужной температуры!" << endl;
+
 		f2out << "Атомы поcле отжига:" << endl;
 		for (int k = 0; k < 100; k++) {
 			if (chain_bool[k]) f2out << k << ' ';
@@ -344,13 +339,13 @@ int main()
 
 	f2out << -1 << endl;
 	f2out << "Начальная температура: " << t1 << endl;
+	f2out << "Конечная температура: " << t2 << endl;
 	f2out << "Количество повторений эксперимента: " << it_ex << endl;
-	f2out << "Количество повторений отжига: " << it_s2 << endl;
 	f2out << "Число напыленных атомов: " << avg_atoms / (ITERATIONS_OF_EXP) << "/100" << endl;
 	f2out << "Тау: " << tay << " секунд" << endl;
 
 	f2out << "Среднее время отжига: " << avg1_time / (ITERATIONS_OF_EXP) << endl;
-	f2out << "Среднее время эксперимента: " << avg2_time / (ITERATIONS_OF_EXP) << endl;
+	f2out << "Среднее время напыления: " << avg2_time / (ITERATIONS_OF_EXP) << endl;
 	f2out << "Среднее темература после напыления: " << avg1_temp / (ITERATIONS_OF_EXP) << endl;
 	f2out << "Среднее температура после отжига: " << avg2_temp / (ITERATIONS_OF_EXP) << endl;
 	
