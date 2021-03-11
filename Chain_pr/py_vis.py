@@ -13,6 +13,8 @@ line = f.readline()
 x = []
 y = []
 
+line = f.readline()
+
 while line != "-1\n":
     if len(line.rsplit()) > 0:
         x.append(int(line.rsplit()[0]))
