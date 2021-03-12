@@ -2,13 +2,14 @@
 #include <math.h>
 #include <ctime>
 #include <fstream>
+#include <cstdlib>
 
 #define K0_const 1e12 //секунда^(-1)
 #define k_bol 8.625E-5 //константа Больцмана еВ/К
-#define Temperature_1 130 // Kельвин начальная температура
-#define Temperature_2 120 // конечная температура
-#define TAY 100//[секунды] тау в показателе экспаненты изменения температуры
-#define ITERATIONS_OF_EXP 1
+#define Temperature_1 // Kельвин начальная температура
+#define Temperature_2  // конечная температура
+#define TAY //[секунды] тау в показателе экспаненты изменения температуры
+#define ITERATIONS_OF_EXP 
 
 
 using namespace std;
@@ -25,21 +26,32 @@ struct Possible_Events {
 	int to;
 	double rate;
 };
+struct Init {
+	int iterations_of_exp;
+	int tay;
+	int temperature1;
+	int temperature2;
+	int time_of_nap;
+};
 
 void find_rate(bool * chain_bool, int pos, double temperature);
+void file_distribution_output(ofstream& f2out);
+void file_chain_output(bool * chain_bool, ofstream& f2out);
 
 Rate_Catalog * mas_rate = new Rate_Catalog[100];
 Possible_Events * events = new Possible_Events[201];
+Init init_values;
+
 int mem_pos_to = 0; 
 int chain_lenth_distribution[100];
-double time1;
+double time1; //время
 unsigned int avg_atoms;
 unsigned int avg_ot;
 unsigned int avg_nap;
-double T1;
+double T1; //температура
+char s[200]; //имя выводимого файла
 
-void file_distribution_output(ofstream& f2out);
-void file_chain_output(bool * chain_bool, ofstream& f2out);
+
 void find_rang(bool * chain_bool, int pos, double t) { // содержит вызов find_rate()
 	int l = 1;
 	while (chain_bool[((int)100 + (pos - l)) % 100] != true && l < 5) {// ищем разность позициий данного атома и ближайшего слева
@@ -226,13 +238,40 @@ void choose_event(int * chain_int, bool* chain_bool, bool new_atoms) {
 	time1 = time1 + (1 / sum[i - 1]) * l;
 }
 
+bool init(int argc, char* argv[], ofstream& f2out) {
+	if (argc == 6) {
+		init_values.iterations_of_exp = atoi(argv[1]);
+		init_values.tay = atoi(argv[2]);
+		init_values.temperature1 = atoi(argv[3]);
+		init_values.temperature2 = atoi(argv[4]);
+		init_values.time_of_nap = atoi(argv[5]);
+		strcpy_s(s, "D:\\5 семестр\\projects\\project_test2\\res\\exp=");
+		strcat_s(s, argv[1]);
+		strcat_s(s, "_tay=");
+		strcat_s(s, argv[2]);
+		strcat_s(s, "_T1=");
+		strcat_s(s, argv[3]);
+		strcat_s(s, "_T2=");
+		strcat_s(s, argv[4]);
+		strcat_s(s, "_time=");
+		strcat_s(s, argv[5]);
+		strcat_s(s, ".txt");
+		f2out.open(s, ios::out);
+		return false;
+	}
+	std::cout << endl << "Input:\n iterations_of_exp\n tay\n temperature1\n temperature2\n time_of_nap" << endl;
+	return true;
+}
 
-
-int main()
+int main(int argc, char* argv[])
 {
-	setlocale(LC_ALL, "Russian");
 	ofstream f2out;
-	f2out.open("output.txt", ios::out);
+	if (init(argc, argv, f2out)) {
+		delete[] mas_rate;
+		delete[] events;
+		return 0;
+	}
+	setlocale(LC_ALL, "Russian");
 
 	unsigned int start_time = clock();
 
@@ -243,10 +282,6 @@ int main()
 		chain_lenth_distribution[i] = 0;
 	}
 
-	int t1 = Temperature_1;
-	int t2 = Temperature_2;
-	int it_ex = ITERATIONS_OF_EXP;
-	double tay = TAY;
 
 	avg_atoms = 0;
 	avg_ot = 0;
@@ -256,13 +291,13 @@ int main()
 	double avg1_temp = 0;
 	double avg2_temp = 0;
 
-	for (int index = 0; index < ITERATIONS_OF_EXP; index++) {
-		if (int(ITERATIONS_OF_EXP / 100) != 0) {
-			if (int(index % int(ITERATIONS_OF_EXP / 100)) == 0) std::cout << "\r" << int(100 * double(index) / ITERATIONS_OF_EXP) << "%";
-			if ((index + 1) % ITERATIONS_OF_EXP == 0) std::cout << endl;
+	for (int index = 0; index < init_values.iterations_of_exp; index++) {
+		if (int(init_values.iterations_of_exp / 100) != 0) {
+			if (int(index % int(init_values.iterations_of_exp / 100)) == 0) std::cout << "\r" << int(100 * double(index) / init_values.iterations_of_exp) << "%";
+			if ((index + 1) % init_values.iterations_of_exp == 0) std::cout << "\r100%" << endl;
 		}
 
-		T1 = Temperature_1;
+		T1 = init_values.temperature1;
 		time1 = 0;
 
 		f2out << "\\\\\\\\\\\\\\ \t Серия " << index + 1 << "\t \\\\\\\\\\\\\\" << endl;
@@ -300,14 +335,17 @@ int main()
 		bool flag = index == 0;
 		ofstream fout;
 		if (flag) {
-			fout.open("output_temperature.txt", ios::out);
+			char* ptr = strstr(s, ".txt");
+			ptr[0] = '\0';
+			strcat_s(s, "Temperature(time).txt");
+			fout.open(s, ios::out);
 		}
 		for ( i_ot = 1;  time1 < 1200; i_ot++) {
 			if (flag) {
 				fout << time1 << " " << T1 << endl;
 			}
 			choose_event(chain_int, chain_bool, false);
-			T1 = (Temperature_1 - Temperature_2) * exp((-1) * time1 / TAY) + Temperature_2;
+			T1 = (init_values.temperature1 - init_values.temperature2) * exp((-1) * time1 / init_values.tay) + init_values.temperature2;
 			create_rate_catalog(chain_bool, T1);
 		}
 		if (flag) {
@@ -332,22 +370,33 @@ int main()
 	//Вывод результатов в файл
 	file_distribution_output(f2out); 
 
+	unsigned int end_time = clock(); // конечное время
+	unsigned int search_time = end_time - start_time; // искомое время
+	std::cout << "Время выполнения программы " << search_time << " мс";
+	f2out << "Время выполнения программы " << search_time << " мс" << endl;
+
 	f2out << -1 << endl;
-	f2out << "T1: " << t1 << " ";
-	f2out << "T2: " << t2 << endl;
-	f2out << "Пов-ий эксп: " << it_ex << " ";
-	f2out << "Адатомов: " << avg_atoms / (ITERATIONS_OF_EXP) << "/100" << endl;
-	f2out << "Тау: " << tay << " секунд" << endl;
+	f2out << "T1=" << init_values.temperature1 << "K ";
+	f2out << "T2=" << init_values.temperature2 << "K ";
+	f2out << "Exp=" << init_values.iterations_of_exp << endl;
+	f2out << "Адатомов: " << avg_atoms / (init_values.iterations_of_exp) << "/100";
+	f2out << " Тау=" << init_values.tay << " секунд" << endl;
 
-	f2out << "Ср. вр. нап: " << avg1_time / (ITERATIONS_OF_EXP) << "сек" << endl;
-	f2out << "Ср. ч-ло ит. нап: " << avg_nap / (ITERATIONS_OF_EXP) << endl;
-	f2out << "Ср. т-ра после нап: " << avg1_temp / (ITERATIONS_OF_EXP) << "K" << endl;
+	f2out << "Ср. вр. нап: " << avg1_time / (init_values.iterations_of_exp) << "сек" << endl;
+	f2out << "Ср. ч-ло ит. нап: " << avg_nap / (init_values.iterations_of_exp) << endl;
+	f2out << "Ср. т-ра после нап: " << avg1_temp / (init_values.iterations_of_exp) << "K" << endl;
 
-	f2out << "Ср. вр. отжига: " << avg2_time / (ITERATIONS_OF_EXP) << "cек" << endl;
-	f2out << "Ср. ч-ло ит. отжига: " << avg_ot / (ITERATIONS_OF_EXP) << endl;
-	f2out << "Ср. т-ра после отжига: " << avg2_temp / (ITERATIONS_OF_EXP) << endl;
+	f2out << "Ср. вр. отжига: " << avg2_time / (init_values.iterations_of_exp) << "cек" << endl;
+	f2out << "Ср. ч-ло ит. отжига: " << avg_ot / (init_values.iterations_of_exp) << endl;
+	f2out << "Ср. т-ра после отжига: " << avg2_temp / (init_values.iterations_of_exp) << endl;
 	
-	
+	ofstream file_time;
+	file_time.open("D:\\5 семестр\\projects\\project_test2\\res\\run_time.txt", ios_base::app);
+	char * ptr = strstr(s, "Temperature(time).txt");
+	ptr[0] = '\0';
+	strcat_s(s, ".txt");
+	file_time << s << "\t" << search_time / double(init_values.iterations_of_exp) << "ms" << endl;
+	file_time.close();
 	
 
 	delete[] chain_bool;
@@ -355,14 +404,10 @@ int main()
 	delete[] mas_rate;
 	delete[] events;
 
-	unsigned int end_time = clock(); // конечное время
-	unsigned int search_time = end_time - start_time; // искомое время
-	std::cout << "Время выполнения программы " <<search_time << " мс" << endl;
+	
 
 	f2out.close();
-	//system("output.txt");
-	std::system("python py_vis.py");
-	std::system("pause");
+	//std::system("python py_vis.py");
 	return 0;
 }
 
@@ -395,12 +440,12 @@ void file_chain_output(bool * chain_bool, ofstream& f2out)
 
 void file_distribution_output(ofstream& f2out) 
 {
-	f2out << "Среднее число напыленных атомов: " << avg_atoms / (ITERATIONS_OF_EXP) << endl;
+	f2out << "Среднее число напыленных атомов: " << avg_atoms / (init_values.iterations_of_exp) << endl;
 	f2out << endl << "(Длина, число отсчетов)" << endl;
-	for (int i = 0; i < 40; i++) {
+	for (int i = 0; i < 37; i++) {
 		f2out << i << " " << chain_lenth_distribution[i] << endl;
 	}
-	for (int i = 40; i < 100; i++) {
+	for (int i = 37; i < 100; i++) {
 		if (chain_lenth_distribution[i] != 0) f2out << i << " " << chain_lenth_distribution[i] << endl;
 	}
 }
