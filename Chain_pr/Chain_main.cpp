@@ -395,7 +395,7 @@ int main(int argc, char* argv[])
 	char * ptr = strstr(s, "Temperature(time).txt");
 	ptr[0] = '\0';
 	strcat_s(s, ".txt");
-	file_time << s << "\t" << search_time / double(init_values.iterations_of_exp) << "ms" << endl;
+	file_time << s << "\t\t" << search_time / double(init_values.iterations_of_exp) << "ms" << endl;
 	file_time.close();
 	
 
