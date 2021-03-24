@@ -11,6 +11,9 @@
 #define TAY //[секунды] тау в показателе экспаненты изменения температуры
 #define ITERATIONS_OF_EXP 
 
+#define LEN_OF_CHAIN 1164
+#define NUM_OF_ADATOMS 364
+
 
 using namespace std;
 
@@ -38,12 +41,12 @@ void find_rate(bool * chain_bool, int pos, double temperature);
 void file_distribution_output(ofstream& f2out);
 void file_chain_output(bool * chain_bool, ofstream& f2out);
 
-Rate_Catalog * mas_rate = new Rate_Catalog[100];
-Possible_Events * events = new Possible_Events[201];
+Rate_Catalog * mas_rate = new Rate_Catalog[LEN_OF_CHAIN];
+Possible_Events * events = new Possible_Events[NUM_OF_ADATOMS * 2 + 10];
 Init init_values;
 
 int mem_pos_to = 0; 
-int chain_lenth_distribution[100];
+int chain_lenth_distribution[LEN_OF_CHAIN];
 double time1; //время
 unsigned int avg_atoms;
 unsigned int avg_ot;
@@ -54,11 +57,11 @@ char s[200]; //имя выводимого файла
 
 void find_rang(bool * chain_bool, int pos, double t) { // содержит вызов find_rate()
 	int l = 1;
-	while (chain_bool[((int)100 + (pos - l)) % 100] != true && l < 5) {// ищем разность позициий данного атома и ближайшего слева
+	while (chain_bool[((int)LEN_OF_CHAIN + (pos - l)) % LEN_OF_CHAIN] != true && l < 5) {// ищем разность позициий данного атома и ближайшего слева
 		l++;
 	}
 	int r = 1;
-	while (chain_bool[(pos + r) % 100] != true && r < 5) {// ищем разность позициий данного атома и ближайшего справа
+	while (chain_bool[(pos + r) % LEN_OF_CHAIN] != true && r < 5) {// ищем разность позициий данного атома и ближайшего справа
 		r++;
 	}
 	if (l == 1) { 
@@ -138,7 +141,7 @@ void find_rate(bool * chain_bool, int pos, double temperature) {
 	mas_rate[pos].rate_right = (double)( K0_const )* exp((double)((-1)* mas_rate[pos].move_right_barieer / (k_bol) / temperature));
 };
 void create_rate_catalog(bool * chain_bool, double t) {
-	for (int i = 0; i < 100; i++) {
+	for (int i = 0; i < LEN_OF_CHAIN; i++) {
 		if (chain_bool[i]) {
 			find_rang(chain_bool, i, t);
 		}
@@ -149,14 +152,14 @@ void change_rate_catalog(bool * chain_bool, double t)
 	int i = 0;
 	find_rang(chain_bool, mem_pos_to, t);
 	for (int i = 1; i < 5; i++) {
-		if (chain_bool[(100 + mem_pos_to - i) % 100]) {
-			find_rang(chain_bool, (100 + mem_pos_to - i) % 100, t);
+		if (chain_bool[(LEN_OF_CHAIN + mem_pos_to - i) % LEN_OF_CHAIN]) {
+			find_rang(chain_bool, (LEN_OF_CHAIN + mem_pos_to - i) % LEN_OF_CHAIN, t);
 			break;
 		}
 	}
 	for (int i = 1; i < 5; i++) {
-		if (chain_bool[(mem_pos_to + i) % 100]) {
-			find_rang(chain_bool, (mem_pos_to + i) % 100, t);
+		if (chain_bool[(mem_pos_to + i) % LEN_OF_CHAIN]) {
+			find_rang(chain_bool, (mem_pos_to + i) % LEN_OF_CHAIN, t);
 			break;
 		}
 	}
@@ -166,23 +169,23 @@ void choose_event(int * chain_int, bool* chain_bool, bool new_atoms) {
 	int k = 1;
 	int m = 0;
 	while (chain_int[m] >= 0) {
-		int pos = (chain_int[m] - 1 + 100) % 100;
+		int pos = (chain_int[m] - 1 + LEN_OF_CHAIN) % LEN_OF_CHAIN;
 		if (!chain_bool[pos]) { // если слева от атома есть место
 			events[k].from = chain_int[m];
 			events[k].to = pos;
-			events[k].rate = mas_rate[(pos + 1) % 100].rate_left;
+			events[k].rate = mas_rate[(pos + 1) % LEN_OF_CHAIN].rate_left;
 			k++;
 		}
-		pos = (pos + 2) % 100;
+		pos = (pos + 2) % LEN_OF_CHAIN;
 		if (!chain_bool[pos]) { // если справа от атома есть место
 			events[k].from = chain_int[m];
 			events[k].to = pos;
-			events[k].rate = mas_rate[(pos - 1 + 100) % 100].rate_right;
+			events[k].rate = mas_rate[(pos - 1 + LEN_OF_CHAIN) % LEN_OF_CHAIN].rate_right;
 			k++;
 		}
 		m++;
 	}
-	double sum[201]; //массив сумм всех вероятностей
+	double sum[NUM_OF_ADATOMS * 2 + 10]; //массив сумм всех вероятностей
 
 
 	if (new_atoms) { // если напыление включено
@@ -211,11 +214,11 @@ void choose_event(int * chain_int, bool* chain_bool, bool new_atoms) {
 			std::cout << "Try to add atom" << endl;
 		}
 		int rand2 = 0;
-		if (chain_int[99] >= 0) {
+		if (chain_int[NUM_OF_ADATOMS] >= 0) {
 			std::cout << "Too many atoms" << endl;
 		}
 		do {
-			rand2 = (int)(((double)(rand()) / RAND_MAX) * 99); //случайная позиция
+			rand2 = (int)(((double)(rand()) / RAND_MAX) * (LEN_OF_CHAIN - 1)); //случайная позиция
 		} while (chain_bool[rand2]); //до тех пор пока не попадем в пустую позицию
 		chain_int[m] = rand2;
 		chain_bool[rand2] = true;
@@ -223,8 +226,8 @@ void choose_event(int * chain_int, bool* chain_bool, bool new_atoms) {
 	}
 	else { //событие движения
 		int t = 0;
-		for (t; chain_int[t] != events[j].from && t < 100; t++) {}
-		if (t >= 100) { 
+		for (t; chain_int[t] != events[j].from && t < LEN_OF_CHAIN; t++) {}
+		if (t >= LEN_OF_CHAIN) {
 			std::cout << "Out of array chain_int" << endl;
 		}
 		chain_int[t] = events[j].to;
@@ -275,10 +278,10 @@ int main(int argc, char* argv[])
 
 	unsigned int start_time = clock();
 
-	int * chain_int = new int[100];
-	bool * chain_bool = new bool[100];
+	int * chain_int = new int[LEN_OF_CHAIN];
+	bool * chain_bool = new bool[LEN_OF_CHAIN];
 
-	for (int i = 0; i < 100; i++) {
+	for (int i = 0; i < LEN_OF_CHAIN; i++) {
 		chain_lenth_distribution[i] = 0;
 	}
 
@@ -302,7 +305,7 @@ int main(int argc, char* argv[])
 
 		f2out << "\\\\\\\\\\\\\\ \t Серия " << index + 1 << "\t \\\\\\\\\\\\\\" << endl;
 		srand(index);
-		for (int i = 0; i < 100; i++) {
+		for (int i = 0; i < LEN_OF_CHAIN; i++) {
 			chain_int[i] = -1;
 			chain_bool[i] = false;
 		}
@@ -310,7 +313,7 @@ int main(int argc, char* argv[])
 		//1 ЭТАП (Напыление)
 		int i_nap = 1;
 
-		for (i_nap = 1; chain_int[35] < 0; i_nap++) {
+		for (i_nap = 1; chain_int[NUM_OF_ADATOMS - 1] < 0; i_nap++) {
 			choose_event(chain_int, chain_bool, true);
 			change_rate_catalog(chain_bool, T1);
 		}
@@ -319,7 +322,7 @@ int main(int argc, char* argv[])
 		f2out << "НАПЫЛЕНИЕ" << endl;
 		f2out << "Температура после напыления: " << T1 << endl;
 		int count_number_of_adatoms = 0;
-		for (int i = 0; i < 100; i++) { if (chain_bool[i]) count_number_of_adatoms++; }
+		for (int i = 0; i < LEN_OF_CHAIN; i++) { if (chain_bool[i]) count_number_of_adatoms++; }
 		avg_atoms = avg_atoms + count_number_of_adatoms;
 		f2out << "Время напыления: " << time1 << endl;
 		f2out << "Число итераций напыления: " << i_nap << endl;
@@ -340,7 +343,7 @@ int main(int argc, char* argv[])
 			strcat_s(s, "Temperature(time).txt");
 			fout.open(s, ios::out);
 		}
-		for ( i_ot = 1;  time1 < 1200; i_ot++) {
+		for ( i_ot = 1;  time1 < init_values.time_of_nap; i_ot++) {
 			if (flag) {
 				fout << time1 << " " << T1 << endl;
 			}
@@ -416,7 +419,7 @@ void file_chain_output(bool * chain_bool, ofstream& f2out)
 	int k = 0;
 	int cnt = 0;
 	for (k; chain_bool[k]; k++) {}
-	for (int n = (k + 1) % 100; n != k; n = (n + 1) % 100) {
+	for (int n = (k + 1) % LEN_OF_CHAIN; n != k; n = (n + 1) % LEN_OF_CHAIN) {
 		if (chain_bool[n]) {
 			cnt++;
 		}
@@ -442,10 +445,10 @@ void file_distribution_output(ofstream& f2out)
 {
 	f2out << "Среднее число напыленных атомов: " << avg_atoms / (init_values.iterations_of_exp) << endl;
 	f2out << endl << "(Длина, число отсчетов)" << endl;
-	for (int i = 0; i < 37; i++) {
+	for (int i = 0; i < NUM_OF_ADATOMS + 1; i++) {
 		f2out << i << " " << chain_lenth_distribution[i] << endl;
 	}
-	for (int i = 37; i < 100; i++) {
+	for (int i = NUM_OF_ADATOMS + 1; i < LEN_OF_CHAIN; i++) {
 		if (chain_lenth_distribution[i] != 0) f2out << i << " " << chain_lenth_distribution[i] << endl;
 	}
 }

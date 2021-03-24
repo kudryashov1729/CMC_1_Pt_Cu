@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-f = open(r"output.txt", "r")
+f = open(r"exp=100_tay=1_T1=130_T2=80_time=1000.txt", "r")
 line = f.readline()
 while line != "(Длина, число отсчетов)\n":
     cur_pos = f.tell()
