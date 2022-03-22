@@ -1,0 +1,4 @@
+D:\Repos\CMC_1_Pt_Cu\Raws\test\exp=300_tay=10_T1=130_T2=120_time=60.txt		3626.04ms
+D:\Repos\CMC_1_Pt_Cu\Raws\test\exp=300_tay=30_T1=130_T2=120_time=60.txt		5466ms
+D:\Repos\CMC_1_Pt_Cu\Raws\test\exp=300_tay=300_T1=130_T2=120_time=60.txt		11396.5ms
+D:\Repos\CMC_1_Pt_Cu\Raws\test\exp=300_tay=1000_T1=130_T2=120_time=60.txt		12769.8ms

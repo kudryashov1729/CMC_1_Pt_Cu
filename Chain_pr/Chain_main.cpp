@@ -3,6 +3,7 @@
 #include <ctime>
 #include <fstream>
 #include <cstdlib>
+#include <random>
 
 #define K0_const 1e12 //секунда^(-1)
 #define k_bol 8.625E-5 //константа Больцмана еВ/К
@@ -13,6 +14,7 @@
 
 #define LEN_OF_CHAIN 1164
 #define NUM_OF_ADATOMS 364
+#define MAX_RANDOM_NUMBER 50000
 
 
 using namespace std;
@@ -25,7 +27,7 @@ struct Rate_Catalog
 	double rate_right;
 };
 struct Possible_Events {
-	int from;
+	int index_from;
 	int to;
 	double rate;
 };
@@ -35,7 +37,12 @@ struct Init {
 	int temperature1;
 	int temperature2;
 	int time_of_nap;
+	unsigned rand_value;
 };
+
+random_device rd;   // non-deterministic generator
+mt19937 gen(rd());  // to seed mersenne twister.
+uniform_int_distribution<> dist(0, MAX_RANDOM_NUMBER); // distribute results between 1 and 6 inclusive.
 
 void find_rate(bool * chain_bool, int pos, double temperature);
 void file_distribution_output(ofstream& f2out);
@@ -166,21 +173,21 @@ void change_rate_catalog(bool * chain_bool, double t)
 };
 void choose_event(int * chain_int, bool* chain_bool, bool new_atoms) {
 	//
-	int k = 1;
-	int m = 0;
+	int k = 1; //индекс свободного места в масиве возможных событий events[]
+	int m = 0; //индекс атома в масиве chain_int[], ещё недобавленного в возможное событие 
 	while (chain_int[m] >= 0) {
 		int pos = (chain_int[m] - 1 + LEN_OF_CHAIN) % LEN_OF_CHAIN;
 		if (!chain_bool[pos]) { // если слева от атома есть место
-			events[k].from = chain_int[m];
+			events[k].index_from = m;
 			events[k].to = pos;
-			events[k].rate = mas_rate[(pos + 1) % LEN_OF_CHAIN].rate_left;
+			events[k].rate = mas_rate[chain_int[m]].rate_left;
 			k++;
 		}
 		pos = (pos + 2) % LEN_OF_CHAIN;
 		if (!chain_bool[pos]) { // если справа от атома есть место
-			events[k].from = chain_int[m];
+			events[k].index_from = m;
 			events[k].to = pos;
-			events[k].rate = mas_rate[(pos - 1 + LEN_OF_CHAIN) % LEN_OF_CHAIN].rate_right;
+			events[k].rate = mas_rate[chain_int[m]].rate_right;
 			k++;
 		}
 		m++;
@@ -200,8 +207,8 @@ void choose_event(int * chain_int, bool* chain_bool, bool new_atoms) {
 		sum[i] = sum[i - 1] + events[i].rate;
 		i++;
 	}
-	int r1 = rand();
-	double rand1 = ((double)(r1) / RAND_MAX) * sum[i - 1];
+	int r1 = dist(gen);
+	double rand1 = ((double)(r1) / MAX_RANDOM_NUMBER) * sum[i - 1];
 	int j = new_atoms ? 0 : 1;
 	for (j; sum[j] < rand1; j++) {}
 	if (j >= k) {
@@ -218,26 +225,21 @@ void choose_event(int * chain_int, bool* chain_bool, bool new_atoms) {
 			std::cout << "Too many atoms" << endl;
 		}
 		do {
-			rand2 = (int)(((double)(rand()) / RAND_MAX) * (LEN_OF_CHAIN - 1)); //случайная позиция
+			rand2 = (int)(((double)(dist(gen)) / MAX_RANDOM_NUMBER) * (LEN_OF_CHAIN - 1)); //случайная позиция
 		} while (chain_bool[rand2]); //до тех пор пока не попадем в пустую позицию
 		chain_int[m] = rand2;
 		chain_bool[rand2] = true;
 		mem_pos_to = rand2;
 	}
 	else { //событие движения
-		int t = 0;
-		for (t; chain_int[t] != events[j].from && t < LEN_OF_CHAIN; t++) {}
-		if (t >= LEN_OF_CHAIN) {
-			std::cout << "Out of array chain_int" << endl;
-		}
-		chain_int[t] = events[j].to;
-		chain_bool[events[j].from] = false;
+		chain_bool[chain_int[events[j].index_from]] = false;
+		chain_int[events[j].index_from] = events[j].to;
 		chain_bool[events[j].to] = true;
-		mem_pos_to = events[j].to; /////не используется
+		mem_pos_to = events[j].to; /////не используется?
 	}
 	//Счет времени
-	int r2 = rand() + 1;
-	double l = log((RAND_MAX + 1) / double(r2));
+	int r2 = dist(gen) + 1;
+	double l = log((MAX_RANDOM_NUMBER + 1) / double(r2));
 	time1 = time1 + (1 / sum[i - 1]) * l;
 }
 
@@ -248,7 +250,7 @@ bool init(int argc, char* argv[], ofstream& f2out) {
 		init_values.temperature1 = atoi(argv[3]);
 		init_values.temperature2 = atoi(argv[4]);
 		init_values.time_of_nap = atoi(argv[5]);
-		strcpy_s(s, "D:\\5 семестр\\projects\\project_test2\\res\\exp=");
+		strcpy_s(s, "D:\\Repos\\CMC_1_Pt_Cu\\Raws\\test\\exp=");
 		strcat_s(s, argv[1]);
 		strcat_s(s, "_tay=");
 		strcat_s(s, argv[2]);
@@ -269,9 +271,11 @@ bool init(int argc, char* argv[], ofstream& f2out) {
 int main(int argc, char* argv[])
 {
 	ofstream f2out;
+
 	if (init(argc, argv, f2out)) {
 		delete[] mas_rate;
 		delete[] events;
+		getchar();
 		return 0;
 	}
 	setlocale(LC_ALL, "Russian");
@@ -335,25 +339,25 @@ int main(int argc, char* argv[])
 		time1 = 0;
 		create_rate_catalog(chain_bool, T1);
 		int i_ot = 0;
-		bool flag = index == 0;
+		/*bool flag = index == 0;
 		ofstream fout;
 		if (flag) {
 			char* ptr = strstr(s, ".txt");
 			ptr[0] = '\0';
 			strcat_s(s, "Temperature(time).txt");
 			fout.open(s, ios::out);
-		}
+		}*/
 		for ( i_ot = 1;  time1 < init_values.time_of_nap; i_ot++) {
-			if (flag) {
+			/*if (flag) {
 				fout << time1 << " " << T1 << endl;
-			}
+			}*/
 			choose_event(chain_int, chain_bool, false);
 			T1 = (init_values.temperature1 - init_values.temperature2) * exp((-1) * time1 / init_values.tay) + init_values.temperature2;
 			create_rate_catalog(chain_bool, T1);
 		}
-		if (flag) {
+		/*if (flag) {
 			fout.close();
-		}
+		}*/
 
 		avg_ot += i_ot;
 
@@ -394,10 +398,10 @@ int main(int argc, char* argv[])
 	f2out << "Ср. т-ра после отжига: " << avg2_temp / (init_values.iterations_of_exp) << endl;
 	
 	ofstream file_time;
-	file_time.open("D:\\5 семестр\\projects\\project_test2\\res\\run_time.txt", ios_base::app);
-	char * ptr = strstr(s, "Temperature(time).txt");
+	file_time.open("D:\\Repos\\CMC_1_Pt_Cu\\Raws\\test\\run_time.txt", ios_base::app);
+	/*char* ptr = strstr(s, "Temperature(time).txt");
 	ptr[0] = '\0';
-	strcat_s(s, ".txt");
+	strcat_s(s, ".txt");*/
 	file_time << s << "\t\t" << search_time / double(init_values.iterations_of_exp) << "ms" << endl;
 	file_time.close();
 	

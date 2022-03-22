@@ -1,0 +1,8 @@
+D:\Repos\CMC_1_Pt_Cu\Raws\test\exp=100_tay=10_T1=130_T2=80_time=600.txt		1470.89ms
+D:\Repos\CMC_1_Pt_Cu\Raws\test\exp=100_tay=10_T1=130_T2=120_time=600.txt		15875.8ms
+D:\Repos\CMC_1_Pt_Cu\Raws\test\exp=100_tay=30_T1=130_T2=80_time=600.txt		1847.22ms
+D:\Repos\CMC_1_Pt_Cu\Raws\test\exp=100_tay=30_T1=130_T2=120_time=600.txt		17767.4ms
+D:\Repos\CMC_1_Pt_Cu\Raws\test\exp=100_tay=300_T1=130_T2=80_time=600.txt		7460.03ms
+D:\Repos\CMC_1_Pt_Cu\Raws\test\exp=100_tay=300_T1=130_T2=120_time=600.txt		43308.1ms
+D:\Repos\CMC_1_Pt_Cu\Raws\test\exp=100_tay=1000_T1=130_T2=80_time=600.txt		21712.6ms
+D:\Repos\CMC_1_Pt_Cu\Raws\test\exp=100_tay=1000_T1=130_T2=120_time=600.txt		76371.1ms
